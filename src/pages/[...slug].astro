@@ -1,0 +1,19 @@
+---
+import Layout from "../layouts/Layout.astro";
+import TestPanel from "../components/TestPanel.astro";
+import { getCollection } from "astro:content";
+
+export async function getStaticPaths() {
+  const pages = await getCollection("pages");
+  return pages.map((page) => ({
+    params: { slug: page.id },
+    props: { page },
+  }));
+}
+
+const { page } = Astro.props;
+---
+
+<Layout>
+  <TestPanel title={page.data.title} />
+</Layout>

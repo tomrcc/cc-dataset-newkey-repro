@@ -1,6 +1,24 @@
 # Minimal CloudCannon config for the data_config new-key repro.
 # The only thing under test: can the Visual Editor JS API add a NEW top-level
-# key to this data file and have it survive Save?
+# key to a data_config file and have it survive Save?
+
+paths:
+  uploads: public/images
+  static: public
+
+# A collection with a visual-editor-enabled page, so there's something to open
+# in the Visual Editor (where the test buttons live).
+collections_config:
+  pages:
+    path: src/content/pages
+    url: /[slug]/
+    icon: wysiwyg
+    _enabled_editors:
+      - visual
+    create:
+      path: '{file_name|slugify}.md'
+
+# The data file under test.
 data_config:
   test:
     path: data/test.json
