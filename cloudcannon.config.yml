@@ -1,0 +1,6 @@
+# Minimal CloudCannon config for the data_config new-key repro.
+# The only thing under test: can the Visual Editor JS API add a NEW top-level
+# key to this data file and have it survive Save?
+data_config:
+  test:
+    path: data/test.json

@@ -1,0 +1,110 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout>
+  <main style="font-family: system-ui, sans-serif; max-width: 780px; margin: 2rem auto; padding: 0 1rem;">
+    <h1>CloudCannon <code>data_config</code> new-key test</h1>
+    <p>
+      Open this page in the <strong>CloudCannon Visual Editor</strong>, click a
+      button, then open the <strong>Save modal</strong> and check the
+      <code>data/test.json</code> diff for the key that was logged.
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 0.5rem; margin: 1rem 0;">
+      <button data-test="dataset-existing-set">
+        D (control). data.set an <em>existing</em> key — should persist
+      </button>
+      <button data-test="dataset-data-set">
+        A. data.set a <em>new</em> key (dataset handle)
+      </button>
+      <button data-test="dataset-content-set">
+        B. content.set a <em>new</em> key (rewrite whole JSON, dataset handle)
+      </button>
+      <button data-test="file-data-set">
+        C. data.set a <em>new</em> key (file-by-path handle)
+      </button>
+    </div>
+
+    <pre id="out" style="background:#111;color:#eee;padding:1rem;border-radius:6px;white-space:pre-wrap;">Results appear here…</pre>
+  </main>
+
+  <script is:inline>
+    const out = document.getElementById("out");
+    const log = (m) => {
+      out.textContent += m + "\n";
+      console.log("[repro]", m);
+    };
+
+    async function getApi() {
+      if (!window.CloudCannonAPI) {
+        throw new Error(
+          "window.CloudCannonAPI not present — open this page inside the CloudCannon Visual Editor (window.inEditorMode).",
+        );
+      }
+      return window.CloudCannonAPI.useVersion("v1", true);
+    }
+
+    async function datasetFile(api) {
+      const f = await api.dataset("test").items();
+      return Array.isArray(f) ? f[0] : f;
+    }
+
+    const NEW = () => ({ original: "O", value: "V", _base_original: "O" });
+
+    const tests = {
+      // Control: mutate an EXISTING key. Expected to appear in the Save diff.
+      "dataset-existing-set": async () => {
+        const file = await datasetFile(await getApi());
+        const v = "Bonjour edited " + Date.now();
+        await file.data.set({ slug: "existing_key.value", value: v });
+        log("D: set existing_key.value = " + v);
+        log("→ Save modal should show existing_key changed.");
+      },
+
+      // A: data.set a brand-new top-level key via the dataset handle.
+      "dataset-data-set": async () => {
+        const file = await datasetFile(await getApi());
+        const k = "A_datasetSet_" + Date.now();
+        await file.data.set({ slug: k, value: NEW() });
+        log("A: dataset.data.set new key → " + k);
+        log("A: readback = " + JSON.stringify(await file.data.get({ slug: k }).catch(() => null)));
+        log("→ check the Save diff for: " + k);
+      },
+
+      // B: rewrite the whole file via content.set with a new key added.
+      "dataset-content-set": async () => {
+        const file = await datasetFile(await getApi());
+        const obj = JSON.parse(await file.content.get());
+        const k = "B_contentSet_" + Date.now();
+        obj[k] = NEW();
+        await file.content.set(JSON.stringify(obj, null, 2));
+        log("B: content.set rewrite added → " + k);
+        log("B: content.get includes it now? " + (await file.content.get()).includes(k));
+        log("→ check the Save diff for: " + k);
+      },
+
+      // C: data.set a new key via a file-by-path handle (not the dataset).
+      "file-data-set": async () => {
+        const file = (await getApi()).file("data/test.json");
+        const k = "C_fileDataSet_" + Date.now();
+        await file.data.set({ slug: k, value: NEW() });
+        log("C: file('data/test.json').data.set new key → " + k);
+        log("C: readback = " + JSON.stringify(await file.data.get({ slug: k }).catch(() => null)));
+        log("→ check the Save diff for: " + k);
+      },
+    };
+
+    document.querySelectorAll("button[data-test]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const name = btn.getAttribute("data-test");
+        log("--- running " + name + " ---");
+        try {
+          await tests[name]();
+        } catch (e) {
+          log("ERROR: " + (e && e.message ? e.message : String(e)));
+        }
+      });
+    });
+  </script>
+</Layout>

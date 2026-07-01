@@ -1,0 +1,23 @@
+---
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>CC data_config new-key repro</title>
+  </head>
+  <body>
+    <slot />
+    <script>
+      // Boot the CloudCannon editing runtime when opened in the Visual Editor.
+      // (In editor mode CloudCannon injects window.CloudCannonAPI; this import
+      // mirrors how testing-rcc-v2 activates the editing client.)
+      if (window?.inEditorMode) {
+        import("@cloudcannon/editable-regions/astro").catch((e) =>
+          console.warn("editable-regions import failed:", e),
+        );
+      }
+    </script>
+  </body>
+</html>
